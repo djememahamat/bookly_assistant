@@ -8,7 +8,7 @@ through topology, not prompt instructions. Three intents are in scope: **order s
 
 ## Architecture
 
-![Agent flow](flow.png)
+![Agent flow](bookly_agent/assets/bookly_workflow.png)
 
 Every user turn runs through `classify_intent`, which routes to one of four branches. The **return_refund** path is the only one that gates on identity — `verify_identity` and `check_eligibility` are structural preconditions for `execute_action: issue_refund`, so a routing bug cannot silently fire a refund. Terminal nodes (yellow) all yield control back to the outer loop via `END`.
 
@@ -28,7 +28,7 @@ cp .env.example .env     # then fill in GOOGLE_API_KEY, LLM_MODEL, LANGSMITH_* (
 Demo-friendly browser chat at `http://localhost:8501`:
 
 ```bash
-uv run streamlit run bookly_agent/streamlit_app.py
+uv run streamlit run streamlit_app.py
 ```
 
 ### CLI
@@ -36,8 +36,8 @@ uv run streamlit run bookly_agent/streamlit_app.py
 Interactive terminal (session-scoped memory, multi-turn):
 
 ```bash
-uv run python bookly_agent/cli.py
-uv run python bookly_agent/cli.py --thread my-session   # resume a named thread
+uv run python cli.py
+uv run python cli.py --thread my-session   # resume a named thread
 ```
 
 REPL commands: `/reset` (new thread), `/state` (dump graph state), `/quit`.
@@ -47,7 +47,7 @@ REPL commands: `/reset` (new thread), `/state` (dump graph state), `/quit`.
 Hits the real LLM:
 
 ```bash
-uv run python bookly_agent/e2e_test.py
+uv run python bookly_agent/tests/e2e_scenarios.py
 ```
 
 ## Example queries

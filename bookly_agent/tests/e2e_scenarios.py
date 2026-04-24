@@ -1,4 +1,15 @@
-"""End-to-end scenario runner. Exercises each terminal branch of the graph."""
+"""End-to-end scenario runner. Exercises each terminal branch of the graph.
+
+Run directly (hits the real LLM):
+    uv run python bookly_agent/tests/e2e_scenarios.py
+
+Not collected by pytest — the filename is intentionally not test_*.py.
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from langchain_core.messages import HumanMessage
 from agent import app
 

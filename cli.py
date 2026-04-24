@@ -15,13 +15,17 @@ Commands inside the REPL:
 """
 from __future__ import annotations
 import argparse
+import sys
 import uuid
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "bookly_agent"))
 
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
 from agent import builder
-from safety import sanitize_user_input
+from utils.safety import sanitize_user_input
 
 
 def make_app():

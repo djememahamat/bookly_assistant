@@ -4,20 +4,23 @@ Demo-focused: clean transcript, no graph internals. Same multi-turn contract
 as the CLI — MemorySaver-backed persistence keyed by a per-session thread id.
 
 Run:
-    uv run streamlit run bookly_agent/streamlit_app.py
+    uv run streamlit run streamlit_app.py
 """
 from __future__ import annotations
+import sys
 import uuid
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "bookly_agent"))
 
 import streamlit as st
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
 from agent import builder
-from safety import sanitize_user_input
+from utils.safety import sanitize_user_input
 
-ASSETS = Path(__file__).parent / "assets"
+ASSETS = Path(__file__).resolve().parent / "bookly_agent" / "assets"
 BOOKS_ICON = ASSETS / "books.png"
 USER_ICON = ASSETS / "user.png"
 
