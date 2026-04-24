@@ -168,11 +168,14 @@ def test_classify_intent_unknown_increments_counter(scripted_llm):
     assert out["clarification_attempts"] == 2
 
 
-def test_classify_intent_known_does_not_increment_counter(scripted_llm):
+def test_classify_intent_known_resets_counter(scripted_llm):
+    """A successful classification clears any accumulated unknown count so
+    an isolated farewell later in the conversation still reaches
+    ask_clarification_unknown instead of being escalated."""
     scripted_llm.queue({"intent": "order_status"})
     state = {"messages": [HumanMessage(content="where is my order")], "clarification_attempts": 1}
     out = nodes.classify_intent(state)
-    assert out["clarification_attempts"] == 1
+    assert out["clarification_attempts"] == 0
 
 
 # ---------- gather_arguments (LLM) ----------

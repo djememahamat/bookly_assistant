@@ -64,10 +64,14 @@ def classify_intent(state: BooklyAgentState) -> dict:
     ])
     intent = result.intent
 
-    # Track unknown attempts so we can escalate after MAX_CLARIFICATION_ATTEMPTS.
-    attempts = state.get("clarification_attempts", 0)
+    # Track *consecutive* unknown attempts so we only escalate on sustained
+    # confusion. A successful classification in between (e.g. the user lands
+    # on a refund, then later says "thanks that all") must reset the counter
+    # so an isolated farewell doesn't get escalated away.
     if intent == "unknown":
-        attempts += 1
+        attempts = state.get("clarification_attempts", 0) + 1
+    else:
+        attempts = 0
 
     return {
         "intent": intent,
