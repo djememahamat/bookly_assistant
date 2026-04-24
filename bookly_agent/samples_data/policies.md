@@ -118,6 +118,27 @@ cannot be cancelled — please use the returns process after delivery.
 
 ---
 
+## Account
+
+### Password reset
+<!-- topic: password_reset -->
+
+If you've forgotten your password, click **"Forgot password?"** on the sign-in
+page. We'll email a secure reset link to the address on your account — the
+link expires after **60 minutes** and can only be used once.
+
+If the email doesn't arrive within a few minutes:
+
+- Check your spam or junk folder.
+- Confirm you used the same email address you signed up with.
+- Add `no-reply@bookly.com` to your contacts so future mails don't get filtered.
+
+For security we never share passwords over chat, email, or phone. If you no
+longer have access to the email on the account, contact support with your
+order number so we can verify ownership.
+
+---
+
 ## Contact
 
 For returns, damaged items, or delivery questions, contact our support team
