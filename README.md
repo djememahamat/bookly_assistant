@@ -8,7 +8,7 @@ through topology, not prompt instructions. Three intents are in scope: **order s
 
 ## Architecture
 
-![Agent flow](agent_workflow.png)
+![Agent flow](flow.png)
 
 Every user turn runs through `classify_intent`, which routes to one of four branches. The **return_refund** path is the only one that gates on identity — `verify_identity` and `check_eligibility` are structural preconditions for `execute_action: issue_refund`, so a routing bug cannot silently fire a refund. Terminal nodes (yellow) all yield control back to the outer loop via `END`.
 
