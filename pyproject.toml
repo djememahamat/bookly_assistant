@@ -18,3 +18,9 @@ dev = [
     "pytest>=9.0.3",
     "streamlit>=1.42",
 ]
+
+[tool.uv]
+# Copy files from the cache into .venv instead of hardlinking. Hardlink mode
+# has been corrupting this venv (silently emptying packages) when the shared
+# cache is touched by other projects.
+link-mode = "copy"
