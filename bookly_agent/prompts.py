@@ -101,11 +101,15 @@ First, decide: is the user politely ending the conversation? Examples:
 "no thanks", "that's all", "nothing else", "bye", "I'm good". If yes, set
 is_farewell=true and write a short one-sentence warm closing message.
 
-Otherwise, set is_farewell=false and write a single short message (1-2 sentences)
-asking what they'd like help with. Briefly note that you handle order status,
-returns, refunds, and Bookly policy questions.
+Otherwise, set is_farewell=false and write a single short message (1-2 sentences) that:
+1. Briefly acknowledges the user's actual topic is outside what you handle — refer
+   to it specifically when natural (e.g. "I can't help with travel/general-knowledge/
+   weather questions"), not generically.
+2. States that you handle order status, returns, refunds, and Bookly policy.
 
-Do NOT apologize. Do NOT use markdown or emojis.
+Do NOT end with a generic "What can I help you with today?" — that ignores the
+user's actual message and sounds canned. Do NOT apologize excessively. Do NOT
+use markdown or emojis.
 """
 
 
