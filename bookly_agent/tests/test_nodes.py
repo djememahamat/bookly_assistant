@@ -278,3 +278,60 @@ def test_answer_general_unknown_topic_also_redirects(scripted_llm):
     state = {"messages": [HumanMessage(content="?")]}
     out = nodes.answer_general(state)
     assert nodes.HELP_URL in out["pending_response"]
+
+
+# ---------- ask_clarification_unknown (LLM, structured) ----------
+
+def test_ask_clarification_unknown_farewell_resets_counter(scripted_llm):
+    """A polite close resets clarification_attempts so the user isn't
+    penalized if they come back later in the session."""
+    scripted_llm.queue({"is_farewell": True, "message": "Thanks, take care!"})
+    state = {
+        "messages": [HumanMessage(content="thanks")],
+        "clarification_attempts": 2,
+    }
+    out = nodes.ask_clarification_unknown(state)
+    assert out["clarification_attempts"] == 0
+    assert "escalated" not in out
+    assert "Thanks" in out["pending_response"]
+
+
+def test_ask_clarification_unknown_farewell_runs_even_at_threshold(scripted_llm):
+    """Regression: 'thanks' after several off-topic turns must reach the
+    farewell branch — the threshold check no longer pre-empts it."""
+    scripted_llm.queue({"is_farewell": True, "message": "Glad I could help."})
+    state = {
+        "messages": [HumanMessage(content="thanks")],
+        "clarification_attempts": nodes.MAX_CLARIFICATION_ATTEMPTS + 3,  # well past
+    }
+    out = nodes.ask_clarification_unknown(state)
+    assert out["clarification_attempts"] == 0
+    assert "escalated" not in out
+    assert "Glad" in out["pending_response"]
+
+
+def test_ask_clarification_unknown_escalates_when_not_farewell_and_at_threshold(scripted_llm):
+    scripted_llm.queue({"is_farewell": False, "message": "(ignored)"})
+    state = {
+        "messages": [HumanMessage(content="what's the capital of France?")],
+        "clarification_attempts": nodes.MAX_CLARIFICATION_ATTEMPTS,
+    }
+    out = nodes.ask_clarification_unknown(state)
+    assert out.get("escalated") is True
+    assert out.get("escalation_reason") == "max_clarification_attempts"
+    assert nodes.HELP_URL in out["pending_response"]
+
+
+def test_ask_clarification_unknown_clarifies_below_threshold(scripted_llm):
+    scripted_llm.queue({
+        "is_farewell": False,
+        "message": "I can help with order status, returns, refunds, and policy.",
+    })
+    state = {
+        "messages": [HumanMessage(content="??")],
+        "clarification_attempts": 1,
+    }
+    out = nodes.ask_clarification_unknown(state)
+    assert "escalated" not in out
+    assert "clarification_attempts" not in out  # not reset, not incremented here
+    assert "order status" in out["pending_response"]

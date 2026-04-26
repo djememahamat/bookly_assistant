@@ -170,11 +170,17 @@ def ask_clarification(state: BooklyAgentState) -> dict:
 
 ####### NODE: ASK_CLARIFICATION_UNKNOWN
 def ask_clarification_unknown(state: BooklyAgentState) -> dict:
-    """Handle unclassifiable messages: either say goodbye or ask what they need.
+    """Handle unclassifiable messages: farewell, escalate, or clarify.
 
-    A polite close ("no thanks", "bye") shouldn't be treated as a failed
-    clarification — if we detect a farewell we reset the attempts counter
-    so the user isn't penalized if they come back later in the session.
+    Order matters: detect farewell FIRST. Otherwise a polite "thanks" after
+    a string of off-topic turns would tip the counter past the threshold
+    and the user would get the rude cannot-help message instead of a warm
+    close.
+
+    - Farewell  -> short closing message, reset counter.
+    - Otherwise, if clarification_attempts has hit MAX_CLARIFICATION_ATTEMPTS
+                -> escalate (cannot-help message + escalated flag).
+    - Otherwise -> clarifying message asking what they'd like help with.
     """
     responder = base_llm.with_structured_output(UnknownResponse)
     result = responder.invoke([
@@ -182,14 +188,33 @@ def ask_clarification_unknown(state: BooklyAgentState) -> dict:
         *state["messages"],
     ])
 
-    update = {
+    if result.is_farewell:
+        return {
+            "messages": [AIMessage(content=result.message)],
+            "pending_response": result.message,
+            "awaiting_user_input": True,
+            "clarification_attempts": 0,
+        }
+
+    if state.get("clarification_attempts", 0) >= MAX_CLARIFICATION_ATTEMPTS:
+        message = (
+            "I'm not able to help with that — I handle order status, returns, "
+            "refunds, and Bookly policy questions. For anything else, please "
+            f"check {HELP_URL}."
+        )
+        return {
+            "messages": [AIMessage(content=message)],
+            "pending_response": message,
+            "awaiting_user_input": True,
+            "escalated": True,
+            "escalation_reason": "max_clarification_attempts",
+        }
+
+    return {
         "messages": [AIMessage(content=result.message)],
         "pending_response": result.message,
         "awaiting_user_input": True,
     }
-    if result.is_farewell:
-        update["clarification_attempts"] = 0
-    return update
 
 
 def _invoke_tool(tool, args: dict) -> dict:
@@ -413,27 +438,6 @@ def respond_ineligible(state: BooklyAgentState) -> dict:
     }
 
 
-####### NODE: RESPOND_CANNOT_HELP
-def respond_cannot_help(state: BooklyAgentState) -> dict:
-    """Terminal: intent stayed unknown past MAX_CLARIFICATION_ATTEMPTS.
-
-    No LLM, no human handoff — redirect to the help center and mark the
-    conversation escalated so downstream systems can see why we gave up.
-    """
-    message = (
-        "I'm not able to help with that — I handle order status, returns, "
-        "refunds, and Bookly policy questions. For anything else, please "
-        f"check {HELP_URL}."
-    )
-    return {
-        "messages": [AIMessage(content=message)],
-        "pending_response": message,
-        "awaiting_user_input": True,
-        "escalated": True,
-        "escalation_reason": "max_clarification_attempts",
-    }
-
-
 ####### CONDITIONAL EDGE HELPERS: used to decide the routing
 #  After CLASSIFY_INTENT
 def route_after_classify(state: BooklyAgentState) -> str:
@@ -444,9 +448,9 @@ def route_after_classify(state: BooklyAgentState) -> str:
         return "gather_arguments"
     if intent == "general_question":
         return "answer_general"
-    # unknown
-    if state.get("clarification_attempts", 0) >= MAX_CLARIFICATION_ATTEMPTS:
-        return "respond_cannot_help"
+    # unknown — always go through ask_clarification_unknown so farewell
+    # detection runs before any escalation decision. The node handles
+    # farewell / escalate / clarify itself.
     return "ask_clarification_unknown"
 
 #  After GATHER_ARGUMENTS

@@ -40,7 +40,6 @@ VERIFY_IDENTITY = "verify_identity"
 RESPOND_IDENTITY_FAILED = "respond_identity_failed"
 CHECK_ELIGIBILITY = "check_eligibility"
 RESPOND_INELIGIBLE = "respond_ineligible"
-RESPOND_CANNOT_HELP = "respond_cannot_help"
 
 #Build the graph (state machine)
 builder = StateGraph(BooklyAgentState)
@@ -57,7 +56,6 @@ builder.add_node(VERIFY_IDENTITY, nodes.verify_identity)
 builder.add_node(RESPOND_IDENTITY_FAILED, nodes.respond_identity_failed)
 builder.add_node(CHECK_ELIGIBILITY, nodes.check_eligibility)
 builder.add_node(RESPOND_INELIGIBLE, nodes.respond_ineligible)
-builder.add_node(RESPOND_CANNOT_HELP, nodes.respond_cannot_help)
 
 #Add Edges
 builder.add_edge(START, CLASSIFY_INTENT)
@@ -65,7 +63,6 @@ builder.add_conditional_edges(CLASSIFY_INTENT, nodes.route_after_classify, {
     GATHER_ARGUMENTS: GATHER_ARGUMENTS,
     ANSWER_GENERAL: ANSWER_GENERAL,
     ASK_CLARIFICATION_UNKNOWN: ASK_CLARIFICATION_UNKNOWN,
-    RESPOND_CANNOT_HELP: RESPOND_CANNOT_HELP,
 })
 builder.add_conditional_edges(GATHER_ARGUMENTS, nodes.route_after_gather_arguments,{
     ASK_CLARIFICATION: ASK_CLARIFICATION,
@@ -90,7 +87,6 @@ builder.add_edge(RESPOND, END)
 builder.add_edge(ANSWER_GENERAL, END)
 builder.add_edge(RESPOND_IDENTITY_FAILED, END)
 builder.add_edge(RESPOND_INELIGIBLE, END)
-builder.add_edge(RESPOND_CANNOT_HELP, END)
 
 app = builder.compile()
 

@@ -28,11 +28,14 @@ def test_route_after_classify_unknown_below_threshold_asks_clarification():
     assert nodes.route_after_classify(state) == "ask_clarification_unknown"
 
 
-def test_route_after_classify_unknown_at_threshold_escalates():
-    """At MAX_CLARIFICATION_ATTEMPTS the helper routes to 'respond_cannot_help',
-    which is the terminal node wired in agent.py for this branch."""
+def test_route_after_classify_unknown_always_goes_through_clarification():
+    """Even at/over MAX_CLARIFICATION_ATTEMPTS the router sends unknowns to
+    ask_clarification_unknown so farewell detection runs first. The node
+    itself decides whether to escalate, close, or ask again."""
     state = {"intent": "unknown", "clarification_attempts": nodes.MAX_CLARIFICATION_ATTEMPTS}
-    assert nodes.route_after_classify(state) == "respond_cannot_help"
+    assert nodes.route_after_classify(state) == "ask_clarification_unknown"
+    state = {"intent": "unknown", "clarification_attempts": nodes.MAX_CLARIFICATION_ATTEMPTS + 5}
+    assert nodes.route_after_classify(state) == "ask_clarification_unknown"
 
 
 # ---------- route_after_gather_arguments ----------
