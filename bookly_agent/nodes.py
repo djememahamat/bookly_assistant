@@ -80,9 +80,35 @@ def classify_intent(state: BooklyAgentState) -> dict:
 
 
 ####### NODE: GATHER_ARGUMENTS
+# Fields whose extracted value MUST literally appear in the user's message.
+# postcode is the identity challenge — an LLM that auto-completes a partial
+# postcode would let an attacker pass verification with a guessed prefix.
+# order_id determines which order is touched, so a hallucinated number must
+# also be rejected.
+_VERBATIM_FIELDS = ("postcode", "order_id")
+
+
+def _normalize(s: str) -> str:
+    """Collapse whitespace and lowercase for substring comparison."""
+    return "".join(s.split()).lower()
+
+
+def _drop_hallucinated(extracted: dict, user_text: str) -> dict:
+    """Drop verbatim-required fields whose value isn't literally in user_text.
+
+    Compared with whitespace collapsed and case-insensitive so "  M13 9PL  "
+    still matches "m13 9pl" in the message.
+    """
+    haystack = _normalize(user_text)
+    return {
+        k: v for k, v in extracted.items()
+        if k not in _VERBATIM_FIELDS or _normalize(str(v)) in haystack
+    }
+
+
 def gather_arguments(state: BooklyAgentState) -> dict:
     """Extract any required arguments from the user's latest message.
- 
+
     Merges newly-extracted arguments into state.arguments, then computes missing_arguments.
     Does NOT ask the clarifying question — that's ask_clarification's job.
     """
@@ -102,11 +128,20 @@ def gather_arguments(state: BooklyAgentState) -> dict:
     ])
     extracted = result.model_dump(exclude_none=True)
 
+    # Defend against LLM auto-completion of security-critical fields. An
+    # extracted postcode/order_id that the user never typed gets dropped here
+    # so missing_arguments will route us back to ask_clarification.
+    last_user = next(
+        (m.content for m in reversed(state["messages"]) if getattr(m, "type", None) == "human"),
+        "",
+    )
+    extracted = _drop_hallucinated(extracted, last_user)
+
     # Merge: new values overwrite old (user may correct a prior answer).
     current.update({k: v for k, v in extracted.items() if v})
- 
+
     missing = [s for s in required if s not in current or not current[s]]
- 
+
     return {
         "arguments": current,
         "missing_arguments": missing,

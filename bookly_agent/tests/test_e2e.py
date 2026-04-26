@@ -205,10 +205,34 @@ def test_e2e_refund_postcode_case_and_whitespace_still_verifies(app, scripted_ll
         {"order_id": "1043", "postcode": "  m13 9pl  ", "reason": "damaged"},
         "Refund issued.",
     )
-    res = app.invoke({"messages": [HumanMessage(content="...")]})
+    # Message must literally contain order_id + postcode for the
+    # anti-hallucination guard in gather_arguments to keep them.
+    res = app.invoke({"messages": [HumanMessage(content="refund 1043 m13 9pl damaged")]})
 
     assert res["identity_verified"] is True
     assert res["tool_results"][-1]["result"]["success"] is True
+
+
+def test_e2e_refund_drops_llm_completed_partial_postcode(app, scripted_llm):
+    """If the LLM auto-completes a partial postcode the user typed
+    (e.g. 'OX4 1H' -> 'OX4 1HB'), gather_arguments must drop the
+    extracted value so identity verification can't be bypassed."""
+    scripted_llm.queue(
+        {"intent": "return_refund"},
+        # Gemini "helpfully" completes OX4 1H -> OX4 1HB (the real postcode
+        # for order 1044). With the guard, this gets discarded.
+        {"order_id": "1044", "postcode": "OX4 1HB", "reason": "missing pages"},
+        "What's the postcode on the order?",
+    )
+    res = app.invoke({"messages": [HumanMessage(content="refund 1044 postcode OX4 1H missing pages")]})
+
+    # postcode was dropped, so we should NOT have proceeded to verification
+    assert "postcode" in res["missing_arguments"]
+    assert res["awaiting_user_input"] is True
+    # No identity check ran, no refund issued
+    tool_names = [t["tool"] for t in res.get("tool_results", [])]
+    assert "verify_identity" not in tool_names
+    assert "issue_refund" not in tool_names
 
 
 def test_e2e_tool_results_accumulate_via_reducer(app, scripted_llm):
@@ -219,7 +243,7 @@ def test_e2e_tool_results_accumulate_via_reducer(app, scripted_llm):
         {"order_id": "1043", "postcode": "M13 9PL", "reason": "damaged"},
         "Refund issued.",
     )
-    res = app.invoke({"messages": [HumanMessage(content="...")]})
+    res = app.invoke({"messages": [HumanMessage(content="refund 1043 M13 9PL damaged")]})
     assert len(res["tool_results"]) == 3
 
 

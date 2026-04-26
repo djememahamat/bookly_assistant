@@ -59,7 +59,10 @@ Your job:
 
 argument extraction rules:
 - order_id: a 4-digit number, possibly prefixed with "#" or "order". Strip prefixes.
-- postcode: a valid UK postcode
+- postcode: extract the postcode the user typed VERBATIM. Do NOT auto-complete,
+  correct, normalize, or fix typos in postcodes — even if the value looks
+  partial or invalid. The postcode is used for identity verification and any
+  modification breaks that check. If the user typed "OX4 1H", return "OX4 1H".
 - reason: a short phrase describing why they want to return (e.g. "damaged", "wrong item", "changed my mind")
 
 Respond with a JSON object ONLY. No prose, no markdown, no explanation.
